@@ -2,6 +2,8 @@
 
 > Transform unstructured meetings into structured, actionable intelligence.
 
+🚀 **[Live Demo: Try SynthAI Here!](https://careerintelligance-eedryyrvermedn5wsjyvdx.streamlit.app/)**
+
 SynthAI is a powerful end-to-end meeting analysis pipeline that takes audio/video recordings and automatically transcribes, diarizes (speaker identification), and generates executive summaries and detailed reports.
 
 ---
