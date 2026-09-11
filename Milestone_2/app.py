@@ -18,7 +18,7 @@ import docx
 from xhtml2pdf import pisa
 import re
 import time
-from database import init_db, create_user, authenticate_user, save_meeting, get_user_meetings
+from database import init_db, create_user, authenticate_user, get_user_meetings, get_meeting_by_id
 
 # Initialize database on startup
 init_db()
@@ -42,25 +42,9 @@ except Exception:
     pass
 # -------------------
 
-
-class CaptureStderr:
-    def __init__(self, pb, pt):
-        self.pb = pb
-        self.pt = pt
-    def write(self, s):
-        if '%' in s and '|' in s:
-            match = re.search(r'(\d+)%', s)
-            if match:
-                val = int(match.group(1))
-                self.pb.progress(val / 100.0)
-                self.pt.text(f"Processing... {val}%")
-    def flush(self):
-        pass
-
 st.set_page_config(
-
-    page_title="CogniMeet — Meeting Intelligence",
-    page_icon="✨",
+    page_title="SynthAI — Meeting Intelligence",
+    page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -72,6 +56,7 @@ st.markdown("""
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 
 <style>
 /* ── ROOT VARIABLES ─────────────────────────────── */
@@ -162,7 +147,68 @@ html, body, [data-testid="stAppViewContainer"],
   color: var(--text-secondary) !important;
 }
 
-/* Removed custom sidebar input CSS to let Streamlit's native dark mode handle password toggles perfectly */
+/* ── INPUTS & TEXT FIELDS (Global, Sidebar & Forms) ───────────────── */
+[data-testid="stTextInput"] [data-baseweb="base-input"],
+[data-testid="stTextInput"] [data-baseweb="input"],
+[data-testid="stTextInput"] div[data-baseweb="base-input"] > div,
+[data-testid="stTextInput"] div[data-baseweb="input"] > div,
+[data-testid="stForm"] [data-baseweb="base-input"],
+[data-testid="stForm"] [data-baseweb="input"],
+[data-testid="stForm"] div[data-baseweb="base-input"] > div,
+[data-testid="stForm"] div[data-baseweb="input"] > div,
+div[data-baseweb="base-input"],
+div[data-baseweb="input"] {
+  background-color: rgba(15, 22, 40, 0.85) !important;
+  background: rgba(15, 22, 40, 0.85) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-testid="stSidebar"] [data-baseweb="base-input"],
+[data-testid="stSidebar"] [data-baseweb="input"],
+[data-testid="stSidebar"] div[data-baseweb="base-input"] > div,
+[data-testid="stSidebar"] div[data-baseweb="input"] > div {
+  background-color: rgba(99, 102, 241, 0.08) !important;
+  background: rgba(99, 102, 241, 0.08) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+[data-testid="stTextInput"] input,
+[data-testid="stForm"] input,
+[data-testid="stSidebar"] input,
+input[type="text"],
+input[type="password"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #F0F4FF !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.88rem !important;
+  caret-color: #F0F4FF !important;
+  border: none !important;
+}
+
+[data-testid="stSidebar"] input {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.8rem !important;
+}
+
+/* Visibility toggle button in password inputs */
+[data-baseweb="base-input"] button,
+[data-testid="stTextInput"] button,
+[data-testid="stSidebar"] button[kind="secondary"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--text-secondary) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+input:focus, [data-baseweb="base-input"]:focus-within {
+  border-color: var(--indigo) !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25) !important;
+}
 
 /* ── HEADINGS & TEXT ────────────────────────────── */
 h1, h2, h3, h4 {
@@ -171,8 +217,31 @@ h1, h2, h3, h4 {
   letter-spacing: -0.02em !important;
 }
 
-p, li, span, div {
+p, li, div {
   font-family: 'Inter', sans-serif !important;
+}
+
+span:not([class*="material"]):not([data-testid*="Icon"]) {
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* Material Symbols & Icons */
+.material-symbols-rounded,
+.material-symbols-outlined,
+.material-icons,
+[data-testid="stIconMaterial"],
+[data-baseweb="base-input"] button span,
+[data-testid="stTextInput"] button span {
+  font-family: 'Material Symbols Rounded', 'Material Icons', sans-serif !important;
+  font-size: 1.2rem !important;
+  line-height: 1 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  display: inline-block !important;
+  white-space: nowrap !important;
+  word-wrap: normal !important;
+  direction: ltr !important;
+  -webkit-font-smoothing: antialiased !important;
 }
 
 /* ── HERO BANNER ────────────────────────────────── */
@@ -348,8 +417,11 @@ p, li, span, div {
 }
 
 /* ── BUTTONS ────────────────────────────────────── */
-[data-testid="baseButton-primary"],
-.stButton > button[kind="primary"] {
+[data-testid="stButton"] > button,
+.stButton > button,
+[data-testid="stFormSubmitButton"] > button,
+button[kind="secondaryFormSubmit"],
+button[kind="primaryFormSubmit"] {
   background: linear-gradient(135deg, var(--indigo-dark) 0%, var(--indigo) 50%, #7C3AED 100%) !important;
   color: #fff !important;
   border: none !important;
@@ -366,8 +438,8 @@ p, li, span, div {
   overflow: hidden !important;
 }
 
-[data-testid="baseButton-primary"]::after,
-.stButton > button[kind="primary"]::after {
+[data-testid="stButton"] > button::after,
+[data-testid="stFormSubmitButton"] > button::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -376,19 +448,19 @@ p, li, span, div {
   transition: var(--transition);
 }
 
-[data-testid="baseButton-primary"]:hover,
-.stButton > button[kind="primary"]:hover {
+[data-testid="stButton"] > button:hover,
+[data-testid="stFormSubmitButton"] > button:hover {
   transform: translateY(-2px) !important;
   box-shadow: 0 8px 30px rgba(99, 102, 241, 0.55) !important;
 }
 
-[data-testid="baseButton-primary"]:hover::after,
-.stButton > button[kind="primary"]:hover::after {
+[data-testid="stButton"] > button:hover::after,
+[data-testid="stFormSubmitButton"] > button:hover::after {
   opacity: 1 !important;
 }
 
-[data-testid="baseButton-primary"]:active,
-.stButton > button[kind="primary"]:active {
+[data-testid="stButton"] > button:active,
+[data-testid="stFormSubmitButton"] > button:active {
   transform: translateY(0) !important;
 }
 
@@ -418,7 +490,9 @@ p, li, span, div {
   background: transparent !important;
 }
 
-[data-testid="stTabsList"] {
+[data-testid="stTabsList"],
+div[data-baseweb="tab-list"],
+div[role="tablist"] {
   background: rgba(10, 14, 26, 0.7) !important;
   border: 1px solid var(--glass-border) !important;
   border-radius: var(--radius-md) !important;
@@ -428,7 +502,14 @@ p, li, span, div {
   width: fit-content !important;
 }
 
-button[data-baseweb="tab"] {
+div[data-baseweb="tab-highlight"],
+div[data-baseweb="tab-border"] {
+  display: none !important;
+}
+
+button[data-baseweb="tab"],
+button[role="tab"],
+[data-testid="stTab"] {
   background: transparent !important;
   color: var(--text-muted) !important;
   border-radius: 8px !important;
@@ -441,13 +522,17 @@ button[data-baseweb="tab"] {
   letter-spacing: 0.01em !important;
 }
 
-button[data-baseweb="tab"][aria-selected="true"] {
+button[data-baseweb="tab"][aria-selected="true"],
+button[role="tab"][aria-selected="true"],
+[data-testid="stTab"][aria-selected="true"] {
   background: linear-gradient(135deg, var(--indigo-dark), var(--indigo)) !important;
   color: #fff !important;
   box-shadow: 0 2px 12px rgba(99,102,241,0.4) !important;
 }
 
-button[data-baseweb="tab"]:hover:not([aria-selected="true"]) {
+button[data-baseweb="tab"]:hover:not([aria-selected="true"]),
+button[role="tab"]:hover:not([aria-selected="true"]),
+[data-testid="stTab"]:hover:not([aria-selected="true"]) {
   color: var(--text-secondary) !important;
   background: rgba(99,102,241,0.08) !important;
 }
@@ -630,21 +715,49 @@ button[data-baseweb="tab"]:hover:not([aria-selected="true"]) {
 
 /* Streamlit chat input */
 [data-testid="stChatInput"] {
-  background: rgba(15, 22, 40, 0.8) !important;
+  background: rgba(15, 22, 40, 0.9) !important;
+  background-color: rgba(15, 22, 40, 0.9) !important;
   border: 1px solid var(--glass-border) !important;
   border-radius: var(--radius-lg) !important;
-  backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+[data-testid="stChatInput"] > div,
+[data-testid="stChatInput"] form,
+[data-testid="stChatInput"] [data-baseweb="base-input"],
+[data-testid="stChatInput"] [data-baseweb="textarea"],
+[data-testid="stChatInput"] [data-baseweb="base-input"] > div,
+[data-testid="stChatInput"] [data-baseweb="textarea"] > div {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
 }
 
 [data-testid="stChatInput"] textarea {
   background: transparent !important;
-  color: var(--text-primary) !important;
+  background-color: transparent !important;
+  color: #F0F4FF !important;
   font-family: 'Inter', sans-serif !important;
   font-size: 0.9rem !important;
+  caret-color: #F0F4FF !important;
 }
 
 [data-testid="stChatInput"] textarea::placeholder {
-  color: var(--text-muted) !important;
+  color: #64748B !important;
+}
+
+[data-testid="stChatInput"] button {
+  background: linear-gradient(135deg, var(--indigo-dark) 0%, var(--indigo) 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+}
+
+/* Ensure the bottom-docked chat container is also styled */
+[data-testid="stBottom"],
+[data-testid="stBottom"] > div {
+  background: var(--bg-void) !important;
+  background-color: var(--bg-void) !important;
 }
 
 /* ── TRANSCRIPT CODE BLOCK ──────────────────────── */
@@ -839,6 +952,8 @@ header { background: transparent !important; }
   max-width: 320px !important;
   width: 300px !important;
   transform: none !important;
+  visibility: visible !important;
+  display: block !important;
 }
 [data-testid="collapsedControl"] {
   display: block !important;
@@ -882,6 +997,77 @@ header { background: transparent !important; }
 """, unsafe_allow_html=True)
 
 
+# ─────────────────────────────────────────────
+#  SESSION STATE
+# ─────────────────────────────────────────────
+for key, default in [
+    ("transcript", None),
+    ("chroma_collection", None),
+    ("messages", []),
+    ("report_summary", None),
+    ("structured_data", None),
+    ("user_id", None),
+    ("username", None),
+    ("current_page", "Command Center"),
+    ("active_meeting_id", None),
+    ("current_meeting_data", None),
+]:
+    if key not in st.session_state:
+        st.session_state[key] = default
+
+
+# ─────────────────────────────────────────────
+#  AUTHENTICATION (before sidebar)
+# ─────────────────────────────────────────────
+if not st.session_state.user_id:
+    # Hide sidebar when not logged in
+    st.markdown('<style>[data-testid="stSidebar"] { display: none !important; } [data-testid="collapsedControl"] { display: none !important; }</style>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="hero-container">
+      <div class="hero-logo">
+        <div class="hero-logo-icon">🧠</div>
+        <div class="hero-brand">SynthAI</div>
+      </div>
+      <div class="hero-tagline">Please log in to access your meeting intelligence.</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    auth_col1, auth_col2, auth_col3 = st.columns([1, 2, 1])
+    with auth_col2:
+        tab_login, tab_signup = st.tabs(["Login", "Sign Up"])
+        
+        with tab_login:
+            with st.form("login_form"):
+                log_user = st.text_input("Username")
+                log_pass = st.text_input("Password", type="password")
+                if st.form_submit_button("Login", use_container_width=True):
+                    from database import authenticate_user
+                    user = authenticate_user(log_user, log_pass)
+                    if user:
+                        st.session_state.user_id = user["id"]
+                        st.session_state.username = user["username"]
+                        st.rerun()
+                    else:
+                        st.error("Invalid username or password.")
+                        
+        with tab_signup:
+            with st.form("signup_form"):
+                reg_user = st.text_input("New Username")
+                reg_pass = st.text_input("New Password", type="password")
+                if st.form_submit_button("Sign Up", use_container_width=True):
+                    from database import create_user
+                    if len(reg_user.strip()) < 3:
+                        st.error("Username must be at least 3 characters.")
+                    elif len(reg_pass) < 6:
+                        st.error("Password must be at least 6 characters.")
+                    else:
+                        success = create_user(reg_user, reg_pass)
+                        if success:
+                            st.success("Account created! You can now log in.")
+                        else:
+                            st.error("Username already exists.")
+    st.stop()
 
 
 # ─────────────────────────────────────────────
@@ -892,10 +1078,10 @@ with st.sidebar:
     <div style="display:flex;align-items:center;gap:0.5rem;padding:0 1rem 1rem;">
       <div style="width:32px;height:32px;background:linear-gradient(135deg,#6366F1,#22D3EE);
                   border-radius:9px;display:flex;align-items:center;justify-content:center;
-                  font-size:1.1rem;">✨</div>
+                  font-size:1.1rem;">🧠</div>
       <div style="font-size:1rem;font-weight:800;background:linear-gradient(135deg,#F0F4FF,#818CF8,#22D3EE);
                   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-                  background-clip:text;letter-spacing:-0.02em;">CogniMeet</div>
+                  background-clip:text;letter-spacing:-0.02em;">SynthAI</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -933,6 +1119,7 @@ with st.sidebar:
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
+    # ── WORKSPACE NAVIGATION ───────────────────
     st.markdown('<p style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#4E5E7A;padding:0 0 0.5rem;">WORKSPACE</p>', unsafe_allow_html=True)
     st.markdown('''<style>
     div[role="radiogroup"] > label > div:first-child { display: none; }
@@ -940,82 +1127,88 @@ with st.sidebar:
     div[role="radiogroup"] > label:hover { background: rgba(99,102,241,0.1); }
     div[role="radiogroup"] > label[data-checked="true"] { background: rgba(99,102,241,0.2); font-weight: bold; border-left: 3px solid #6366F1; color: white !important;}
     </style>''', unsafe_allow_html=True)
-    if "current_page" not in st.session_state:
-        st.session_state.current_page = "Command Center"
-    
+
+    # Apply pending navigation target BEFORE the radio widget renders
+    if "_nav_target" in st.session_state:
+        st.session_state.current_page = st.session_state._nav_target
+        del st.session_state._nav_target
+
     page = st.radio("Navigation", ["Command Center", "Meetings", "Intelligence", "Action Hub", "People", "Validation"], key="current_page", label_visibility="collapsed")
+
+    # ── MEETING SELECTOR IN SIDEBAR ────────────
+    past_meetings = get_user_meetings(st.session_state.get("user_id"))
+    if past_meetings:
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown('<p style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#4E5E7A;padding:0 0 0.25rem;">SELECT MEETING</p>', unsafe_allow_html=True)
+        
+        m_labels = [f"📄 {m[1]} ({m[4].strftime('%m/%d') if m[4] else 'Recent'})" for m in past_meetings]
+        curr_idx = 0
+        if st.session_state.get("active_meeting_id"):
+            for idx, m in enumerate(past_meetings):
+                if m[0] == st.session_state.active_meeting_id:
+                    curr_idx = idx
+                    break
+        
+        sel_label = st.selectbox("Choose meeting", m_labels, index=curr_idx, key="sb_meeting_select", label_visibility="collapsed")
+        sel_m = past_meetings[m_labels.index(sel_label)]
+        
+        if st.session_state.get("active_meeting_id") != sel_m[0]:
+            st.session_state.active_meeting_id = sel_m[0]
+            st.session_state.transcript = sel_m[2]
+            st.session_state.report_summary = sel_m[3]
+            m_details = get_meeting_by_id(sel_m[0])
+            st.session_state.current_meeting_data = m_details
+            st.session_state._nav_target = "Intelligence"
+            st.rerun()
+
+        if st.button("➕ Upload New Recording", use_container_width=True):
+            st.session_state.transcript = None
+            st.session_state.report_summary = None
+            st.session_state.active_meeting_id = None
+            st.session_state.current_meeting_data = None
+            st.session_state._nav_target = "Meetings"
+            st.rerun()
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    st.markdown("""
+    <p style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+              color:#4E5E7A;margin-bottom:0.75rem;">Pipeline</p>
+    <div style="display:flex;flex-direction:column;gap:0.5rem;">
+      <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:#94A3B8;">
+        <span style="color:#6366F1">◆</span> Whisper — Transcription
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:#94A3B8;">
+        <span style="color:#22D3EE">◆</span> Pyannote — Diarization
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:#94A3B8;">
+        <span style="color:#10B981">◆</span> ChromaDB — RAG Index
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:#94A3B8;">
+        <span style="color:#F59E0B">◆</span> Gemini — Intelligence
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
     st.markdown("""
     <p style="font-size:0.65rem;color:#4E5E7A;line-height:1.6;text-align:center;">
-      CogniMeet Platform<br>
+      AI Meeting Synthesizer<br>
       <span style="color:#6366F1">v2.0</span> · Built with Streamlit
     </p>
     """, unsafe_allow_html=True)
+    
+    if st.session_state.user_id:
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown(f'<p style="font-size:0.75rem; color:var(--text-primary); text-align:center;">Logged in as: <strong>{st.session_state.username}</strong></p>', unsafe_allow_html=True)
+        if st.button("Logout", use_container_width=True):
+            for key in ["user_id", "username", "transcript", "chroma_collection", "report_summary", "structured_data", "active_meeting_id", "current_meeting_data"]:
+                st.session_state[key] = None
+            st.session_state["messages"] = []
+            st.session_state._nav_target = "Command Center"
+            st.rerun()
 
-
-# ─────────────────────────────────────────────
-#  AUTH GATE — Login / Signup
-# ─────────────────────────────────────────────
-for auth_key, auth_default in [("logged_in", False), ("user_id", None), ("username", "")]:
-    if auth_key not in st.session_state:
-        st.session_state[auth_key] = auth_default
-
-if not st.session_state.logged_in:
-    st.markdown("""
-    <div style="text-align:center;padding:2rem 2rem 1rem;">
-      <div style="font-size:3rem;margin-bottom:0.5rem;">✨</div>
-      <h2 style="color:#F0F4FF;font-weight:700;margin-bottom:0.25rem;">Welcome to CogniMeet</h2>
-      <p style="color:#94A3B8;">Sign in or create an account to continue</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    auth_tab1, auth_tab2 = st.tabs(["🔑 Login", "📝 Sign Up"])
-
-    with auth_tab1:
-        login_user = st.text_input("Username", key="login_user", placeholder="Enter your username")
-        login_pass = st.text_input("Password", type="password", key="login_pass", placeholder="Enter your password")
-        if st.button("Login", use_container_width=True, type="primary"):
-            if login_user and login_pass:
-                user = authenticate_user(login_user, login_pass)
-                if user:
-                    st.session_state.logged_in = True
-                    st.session_state.user_id = user.id
-                    st.session_state.username = user.username
-                    st.rerun()
-                else:
-                    st.error("Invalid username or password.")
-            else:
-                st.warning("Please enter both username and password.")
-
-    with auth_tab2:
-        signup_user = st.text_input("Choose Username", key="signup_user", placeholder="Pick a username")
-        signup_pass = st.text_input("Choose Password", type="password", key="signup_pass", placeholder="Create a password")
-        signup_pass2 = st.text_input("Confirm Password", type="password", key="signup_pass2", placeholder="Re-enter password")
-        if st.button("Create Account", use_container_width=True, type="primary"):
-            if not signup_user or not signup_pass:
-                st.warning("Please fill in all fields.")
-            elif signup_pass != signup_pass2:
-                st.error("Passwords do not match.")
-            elif len(signup_pass) < 4:
-                st.error("Password must be at least 4 characters.")
-            else:
-                if create_user(signup_user, signup_pass):
-                    st.success("Account created! You can now log in.")
-                else:
-                    st.error("Username already exists. Please choose a different one.")
-
-    st.stop()
-
-# ─────────────────────────────────────────────
-# Show logged-in user in sidebar (Auth gate handled at top of file)
-with st.sidebar:
-    st.markdown(f'<p style="font-size:0.72rem;color:#94A3B8;padding:0.25rem 0;">👤 Logged in as <b style="color:#818CF8;">{st.session_state.username}</b></p>', unsafe_allow_html=True)
-    if st.button("Logout", use_container_width=True):
-        for k in ["logged_in", "user_id", "username"]:
-            st.session_state[k] = False if k == "logged_in" else (None if k == "user_id" else "")
-        st.rerun()
 
 # ─────────────────────────────────────────────
 #  GUARD
@@ -1075,6 +1268,48 @@ def chunk_text(text, chunk_size=5):
     lines = text.split('\n')
     return ["\n".join(lines[i:i+chunk_size]) for i in range(0, len(lines), chunk_size)]
 
+def ensure_chroma_collection():
+    """Ensure a valid ChromaDB collection exists for the current transcript."""
+    if st.session_state.get("chroma_collection") is not None:
+        return st.session_state.chroma_collection
+
+    transcript = st.session_state.get("transcript")
+    if not transcript or not transcript.strip():
+        return None
+
+    try:
+        chroma_client = get_chroma_client()
+        active_id = st.session_state.get("active_meeting_id") or "current"
+        coll_name = f"meeting_chunks_{active_id}"
+
+        try:
+            coll = chroma_client.get_collection(coll_name)
+            if coll and coll.count() > 0:
+                st.session_state.chroma_collection = coll
+                return coll
+        except Exception:
+            pass
+
+        try:
+            chroma_client.delete_collection(coll_name)
+        except Exception:
+            pass
+
+        collection = chroma_client.create_collection(coll_name)
+        embedder = load_embedding_model()
+        chunks = chunk_text(transcript)
+        if chunks:
+            embeddings = embedder.encode(chunks).tolist()
+            collection.add(
+                embeddings=embeddings,
+                documents=chunks,
+                ids=[f"chunk_{i}" for i in range(len(chunks))],
+            )
+        st.session_state.chroma_collection = collection
+        return collection
+    except Exception:
+        return None
+
 def generate_pdf_report(summary, transcript):
     html_content = f"""
     <html><head>
@@ -1089,7 +1324,7 @@ def generate_pdf_report(summary, transcript):
     </style>
     </head><body>
       <h1>🧠 Meeting Intelligence Report</h1>
-      <p class="meta">Generated by CogniMeet Meeting Synthesizer</p>
+      <p class="meta">Generated by SynthAI Meeting Synthesizer</p>
       <div class="summary-block">{markdown.markdown(summary)}</div>
       <h2>Full Transcript</h2>
       <div class="transcript">{transcript}</div>
@@ -1126,93 +1361,193 @@ def generate_docx_report(summary, transcript):
     docx_buffer.seek(0)
     return docx_buffer.getvalue()
 
-
 # ─────────────────────────────────────────────
-#  SESSION STATE
+#  AUTHENTICATION
 # ─────────────────────────────────────────────
-for key, default in [
-    ("transcript", None),
-    ("chroma_collection", None),
-    ("messages", []),
-    ("report_summary", None),
-]:
-    if key not in st.session_state:
-        st.session_state[key] = default
-
-
+# (Authentication gate is now handled before the sidebar above)
 # ─────────────────────────────────────────────
 #  ROUTER LOGIC
 # ─────────────────────────────────────────────
 
+# ═══════ COMMAND CENTER ═══════
+if page == "Command Center":
+    st.markdown("""
+    <div class="hero-container">
+      <div class="hero-logo">
+        <div class="hero-logo-icon">🧠</div>
+        <div class="hero-brand">SynthAI</div>
+      </div>
+      <div class="hero-tagline">Meeting Intelligence Platform — Transcribe, Analyze, Synthesize</div>
+      <div class="hero-badges">
+        <span class="hero-badge badge-whisper">⚡ Whisper Transcription</span>
+        <span class="hero-badge badge-gemini">✦ Gemini Intelligence</span>
+        <span class="hero-badge badge-rag">◈ RAG Chat</span>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Quick status cards
+    has_meeting = st.session_state.transcript is not None
+    if has_meeting:
+        word_count = len(st.session_state.transcript.split())
+        lines_count = len(st.session_state.transcript.strip().split('\n'))
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown("### 📊 Active Meeting Session")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Status", "✅ Meeting Loaded")
+        c2.metric("Utterances", f"{lines_count}")
+        c3.metric("Words", f"{word_count:,}")
+        
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            if st.button("🔍 View Meeting Intelligence & Report", use_container_width=True, type="primary"):
+                st.session_state._nav_target = "Intelligence"
+                st.rerun()
+        with col_btn2:
+            if st.button("➕ Upload Another Meeting", use_container_width=True):
+                st.session_state._nav_target = "Meetings"
+                st.rerun()
+    else:
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.info("👋 Welcome! Select an existing meeting from the sidebar or click below to upload a new recording.")
+        if st.button("🎙️ Upload & Process New Meeting", use_container_width=True, type="primary"):
+            st.session_state._nav_target = "Meetings"
+            st.rerun()
+
+    # Meeting History from database
+    if st.session_state.get("user_id"):
+        past_meetings = get_user_meetings(st.session_state.user_id)
+        if past_meetings:
+            st.markdown("<hr>", unsafe_allow_html=True)
+            st.markdown("### 📂 Your Saved Meetings")
+            for m_id, m_file, m_transcript, m_summary, m_date in past_meetings:
+                date_str = m_date.strftime("%Y-%m-%d %H:%M") if m_date else "Recent"
+                word_ct = len(m_transcript.split()) if m_transcript else 0
+                is_current = (st.session_state.get("active_meeting_id") == m_id)
+                tag = " (Currently Active)" if is_current else ""
+                with st.expander(f"📄 {m_file} — {date_str} ({word_ct:,} words){tag}"):
+                    if m_summary:
+                        st.markdown("**Executive Summary:**")
+                        st.markdown(m_summary[:400] + ("..." if len(m_summary) > 400 else ""))
+                    if not is_current:
+                        if st.button(f"Load this meeting", key=f"cmd_load_{m_id}"):
+                            st.session_state.active_meeting_id = m_id
+                            st.session_state.transcript = m_transcript
+                            st.session_state.report_summary = m_summary
+                            m_details = get_meeting_by_id(m_id)
+                            st.session_state.current_meeting_data = m_details
+                            st.session_state._nav_target = "Intelligence"
+                            st.rerun()
+                    else:
+                        st.success("Currently active. Navigate to Intelligence or Action Hub to view details.")
+
+    st.stop()
+
 # ═══════ ACTION HUB ═══════
-if page == "Action Hub":
+elif page == "Action Hub":
     st.markdown("""
     <div class="section-header">
       <div class="section-header-icon icon-amber">⚡</div>
       <div class="section-header-text">
         <h3>Action Hub</h3>
-        <span>Action items extracted from your meeting</span>
+        <span>Action items and deliverables extracted from your meeting</span>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
     if not st.session_state.transcript:
-        st.warning("No meeting processed yet. Please go to **Meetings** to upload a recording first.")
+        st.warning("No meeting loaded yet. Please select a meeting from the sidebar or go to **Meetings** to upload a recording.")
+        if st.button("Go to Meetings"):
+            st.session_state._nav_target = "Meetings"
+            st.rerun()
         st.stop()
 
-    report = st.session_state.get("report_summary", "")
-    if not report:
-        st.info("Report not generated yet. Please wait for the Intelligence report to finish.")
-        st.stop()
+    structured_actions = []
+    if st.session_state.get("current_meeting_data") and st.session_state.current_meeting_data.get("action_items"):
+        structured_actions = st.session_state.current_meeting_data["action_items"]
+    elif st.session_state.get("active_meeting_id"):
+        m_details = get_meeting_by_id(st.session_state.active_meeting_id)
+        if m_details and m_details.get("action_items"):
+            structured_actions = m_details["action_items"]
+            st.session_state.current_meeting_data = m_details
 
-    # Extract action items from report
-    action_lines = []
-    in_action_section = False
-    for line in report.split('\n'):
-        lower = line.lower().strip()
-        if 'action item' in lower or 'action' in lower and 'owner' in lower:
-            in_action_section = True
-            continue
-        if in_action_section:
-            if line.strip().startswith(('#', '##', '###')) and 'action' not in line.lower():
-                in_action_section = False
-                continue
-            stripped = line.strip().lstrip('-').lstrip('*').lstrip('•').strip()
-            if stripped and len(stripped) > 3:
-                action_lines.append(stripped)
-
-    if not action_lines:
-        # Fallback: find any line with action-like keywords
-        for line in report.split('\n'):
-            stripped = line.strip().lstrip('-').lstrip('*').lstrip('•').strip()
-            for keyword in ['should', 'will', 'needs to', 'must', 'assigned to', 'responsible', 'follow up', 'deadline']:
-                if keyword in stripped.lower() and len(stripped) > 10:
-                    action_lines.append(stripped)
-                    break
-
-    if action_lines:
-        for idx, item in enumerate(action_lines):
-            status_key = f"action_{idx}"
+    if structured_actions:
+        st.markdown(f"**{len(structured_actions)}** action items identified:")
+        for idx, item in enumerate(structured_actions):
+            status_key = f"action_{st.session_state.get('active_meeting_id', 0)}_{idx}"
             if status_key not in st.session_state:
-                st.session_state[status_key] = False
+                st.session_state[status_key] = (item.get("status") == "Completed")
 
             col_check, col_text = st.columns([0.05, 0.95])
             with col_check:
                 st.session_state[status_key] = st.checkbox("", value=st.session_state[status_key], key=f"cb_{status_key}", label_visibility="collapsed")
             with col_text:
+                priority = item.get("priority") or "Medium"
+                priority_color = "#F43F5E" if priority.lower() == "high" else ("#F59E0B" if priority.lower() == "medium" else "#10B981")
+                assignee = item.get("assigned_participant") or "Unassigned"
+                deadline = f" · ⏰ {item.get('deadline')}" if item.get("deadline") else ""
+                
+                desc_text = item.get('description', '')
                 if st.session_state[status_key]:
-                    st.markdown(f'<p style="color:#94A3B8;text-decoration:line-through;">{item}</p>', unsafe_allow_html=True)
+                    st.markdown(f'<p style="color:#94A3B8;text-decoration:line-through;margin:0;">{desc_text}</p>', unsafe_allow_html=True)
                 else:
-                    st.markdown(f'<p style="color:#F0F4FF;">{item}</p>', unsafe_allow_html=True)
+                    st.markdown(f'<p style="color:#F0F4FF;font-weight:500;margin:0;">{desc_text}</p>', unsafe_allow_html=True)
+                st.markdown(f'<span style="font-size:0.7rem;color:#818CF8;">👤 {assignee}</span> <span style="font-size:0.7rem;color:{priority_color};font-weight:600;margin-left:0.5rem;">● {priority}</span><span style="font-size:0.7rem;color:#94A3B8;">{deadline}</span>', unsafe_allow_html=True)
 
         st.markdown("<hr>", unsafe_allow_html=True)
-        done_count = sum(1 for i in range(len(action_lines)) if st.session_state.get(f"action_{i}", False))
-        total = len(action_lines)
+        done_count = sum(1 for i in range(len(structured_actions)) if st.session_state.get(f"action_{st.session_state.get('active_meeting_id', 0)}_{i}", False))
+        total = len(structured_actions)
         pct = done_count / total if total > 0 else 0
         st.progress(pct)
         st.markdown(f"**{done_count}/{total}** action items completed")
     else:
-        st.info("No specific action items were found in the meeting report.")
+        report = st.session_state.get("report_summary", "")
+        action_lines = []
+        in_action_section = False
+        for line in report.split('\n'):
+            lower = line.lower().strip()
+            if 'action item' in lower or 'action' in lower and 'owner' in lower:
+                in_action_section = True
+                continue
+            if in_action_section:
+                if line.strip().startswith(('#', '##', '###')) and 'action' not in line.lower():
+                    in_action_section = False
+                    continue
+                stripped = line.strip().lstrip('-').lstrip('*').lstrip('•').strip()
+                if stripped and len(stripped) > 3:
+                    action_lines.append(stripped)
+
+        if not action_lines:
+            for line in report.split('\n'):
+                stripped = line.strip().lstrip('-').lstrip('*').lstrip('•').strip()
+                for keyword in ['should', 'will', 'needs to', 'must', 'assigned to', 'responsible', 'follow up', 'deadline']:
+                    if keyword in stripped.lower() and len(stripped) > 10:
+                        action_lines.append(stripped)
+                        break
+
+        if action_lines:
+            for idx, item in enumerate(action_lines):
+                status_key = f"action_{idx}"
+                if status_key not in st.session_state:
+                    st.session_state[status_key] = False
+
+                col_check, col_text = st.columns([0.05, 0.95])
+                with col_check:
+                    st.session_state[status_key] = st.checkbox("", value=st.session_state[status_key], key=f"cb_{status_key}", label_visibility="collapsed")
+                with col_text:
+                    if st.session_state[status_key]:
+                        st.markdown(f'<p style="color:#94A3B8;text-decoration:line-through;">{item}</p>', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f'<p style="color:#F0F4FF;">{item}</p>', unsafe_allow_html=True)
+
+            st.markdown("<hr>", unsafe_allow_html=True)
+            done_count = sum(1 for i in range(len(action_lines)) if st.session_state.get(f"action_{i}", False))
+            total = len(action_lines)
+            pct = done_count / total if total > 0 else 0
+            st.progress(pct)
+            st.markdown(f"**{done_count}/{total}** action items completed")
+        else:
+            st.info("No specific action items found in the current meeting.")
 
     st.stop()
 
@@ -1222,17 +1557,19 @@ elif page == "People":
     <div class="section-header">
       <div class="section-header-icon icon-emerald">👥</div>
       <div class="section-header-text">
-        <h3>People</h3>
-        <span>Speaker participation from diarized transcript</span>
+        <h3>People & Participants</h3>
+        <span>Speaker participation analytics from diarized transcript</span>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
     if not st.session_state.transcript:
-        st.warning("No meeting processed yet. Please go to **Meetings** to upload a recording first.")
+        st.warning("No meeting loaded yet. Please select a meeting from the sidebar or go to **Meetings** to upload a recording.")
+        if st.button("Go to Meetings"):
+            st.session_state._nav_target = "Meetings"
+            st.rerun()
         st.stop()
 
-    # Parse speakers from transcript
     speaker_data = {}
     transcript_lines = st.session_state.transcript.strip().split('\n')
     for line in transcript_lines:
@@ -1253,7 +1590,6 @@ elif page == "People":
     total_words = sum(v["words"] for v in speaker_data.values())
     total_utterances = sum(v["utterances"] for v in speaker_data.values())
 
-    # Summary row
     c1, c2, c3 = st.columns(3)
     with c1:
         st.markdown(f"""
@@ -1285,7 +1621,6 @@ elif page == "People":
 
     st.markdown('<div style="height:1.5rem;"></div>', unsafe_allow_html=True)
 
-    # Per-speaker cards
     colors = ["#6366F1", "#22D3EE", "#10B981", "#F59E0B", "#F43F5E", "#A78BFA", "#FB923C"]
     for idx, (speaker, data) in enumerate(sorted(speaker_data.items())):
         color = colors[idx % len(colors)]
@@ -1326,18 +1661,17 @@ elif page == "Validation":
     """, unsafe_allow_html=True)
 
     if not st.session_state.transcript:
-        st.warning("No meeting processed yet. Please go to **Meetings** to upload a recording first.")
-        st.info("Once you process a meeting, you can upload a reference text here to measure transcription accuracy.")
+        st.warning("No meeting loaded yet. Please select a meeting from the sidebar or go to **Meetings** to upload a recording.")
+        if st.button("Go to Meetings"):
+            st.session_state._nav_target = "Meetings"
+            st.rerun()
         st.stop()
 
-    # Extract only the spoken words from the diarized transcript
-    # Strip timestamps like [00:00] and speaker labels like SPEAKER_00:
     whisper_words = []
     for line in st.session_state.transcript.strip().split('\n'):
-        # Remove timestamp pattern [MM:SS] and speaker label SPEAKER_XX:
-        cleaned = re.sub(r'\[\d+:\d+\]', '', line)  # remove [00:00]
-        cleaned = re.sub(r'SPEAKER_\d+:', '', cleaned, flags=re.IGNORECASE)  # remove SPEAKER_00:
-        cleaned = re.sub(r'Speaker\s*\d*:', '', cleaned, flags=re.IGNORECASE)  # remove Speaker 0:
+        cleaned = re.sub(r'\[\d+:\d+\]', '', line)
+        cleaned = re.sub(r'SPEAKER_\d+:', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'Speaker\s*\d*:', '', cleaned, flags=re.IGNORECASE)
         words = cleaned.lower().split()
         whisper_words.extend(words)
 
@@ -1348,13 +1682,11 @@ elif page == "Validation":
 
     if ref_file is not None:
         ref_text = ref_file.read().decode("utf-8", errors="ignore")
-        # Strip timestamps and speakers from the reference text to match whisper_words logic
         cleaned_ref = re.sub(r'\[\d+:\d+\]', '', ref_text)
         cleaned_ref = re.sub(r'SPEAKER_\d+:', '', cleaned_ref, flags=re.IGNORECASE)
         cleaned_ref = re.sub(r'Speaker\s*\d*:', '', cleaned_ref, flags=re.IGNORECASE)
         ref_words = cleaned_ref.lower().split()
 
-        # Compute word-level accuracy using simple matching
         ref_set = {}
         for w in ref_words:
             ref_set[w] = ref_set.get(w, 0) + 1
@@ -1373,7 +1705,6 @@ elif page == "Validation":
         target = 90.0
         passed = accuracy >= target
 
-        # Missing and extra words
         missing_words = {}
         for w, count in ref_set.items():
             diff = count - whisper_set.get(w, 0)
@@ -1386,7 +1717,6 @@ elif page == "Validation":
             if diff > 0:
                 extra_words[w] = diff
 
-        # Display results
         st.markdown("<hr>", unsafe_allow_html=True)
 
         col1, col2 = st.columns([1, 2])
@@ -1433,68 +1763,17 @@ elif page == "Validation":
 
     st.stop()
 
-# ═══════ INTELLIGENCE ═══════
+# ═══════ INTELLIGENCE GUARD ═══════
 elif page == "Intelligence":
     if not st.session_state.transcript:
-        st.warning("No meeting processed yet. Please go to **Meetings** to upload a recording.")
+        st.warning("No meeting loaded yet. Please select an existing meeting from the sidebar or go to **Meetings** to upload a recording.")
+        if st.button("🎙️ Go to Meetings to Upload"):
+            st.session_state._nav_target = "Meetings"
+            st.rerun()
         st.stop()
 
-# ═══════ COMMAND CENTER ═══════
-elif page == "Command Center":
-    st.markdown("""
-    <div class="hero-container">
-  <div class="hero-logo">
-    <div class="hero-logo-icon">✨</div>
-    <div class="hero-brand">CogniMeet</div>
-  </div>
-  <div class="hero-tagline">Meeting Intelligence Platform — Transcribe, Analyze, Synthesize</div>
-  <div class="hero-badges">
-    <span class="hero-badge badge-whisper">⚡ Whisper Transcription</span>
-    <span class="hero-badge badge-gemini">✦ Gemini Intelligence</span>
-    <span class="hero-badge badge-rag">◈ RAG Chat</span>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-    # Quick status cards
-    has_meeting = st.session_state.transcript is not None
-    if has_meeting:
-        word_count = len(st.session_state.transcript.split())
-        lines_count = len(st.session_state.transcript.strip().split('\n'))
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.markdown("### 📊 Current Session")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Status", "✅ Meeting Loaded")
-        c2.metric("Utterances", f"{lines_count}")
-        c3.metric("Words", f"{word_count:,}")
-        st.info("Navigate to **Intelligence** to view the report, **People** for speaker stats, or **Validation** to test accuracy.")
-    else:
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.info("👋 Welcome! Go to **Meetings** in the sidebar to upload and process your first recording.")
-
-    # Meeting History from database
-    if st.session_state.get("user_id"):
-        past_meetings = get_user_meetings(st.session_state.user_id)
-        if past_meetings:
-            st.markdown("<hr>", unsafe_allow_html=True)
-            st.markdown("### 📂 Meeting History")
-            for m_id, m_file, m_transcript, m_summary, m_date in past_meetings:
-                date_str = m_date.strftime("%Y-%m-%d %H:%M") if m_date else "Unknown"
-                word_ct = len(m_transcript.split()) if m_transcript else 0
-                with st.expander(f"📄 {m_file}  —  {date_str}  ({word_ct:,} words)"):
-                    if m_summary:
-                        st.markdown("**Report Summary:**")
-                        st.markdown(m_summary[:500] + ("..." if len(m_summary) > 500 else ""))
-                    if st.button(f"Load this meeting", key=f"load_{m_id}"):
-                        st.session_state.transcript = m_transcript
-                        st.session_state.report_summary = m_summary
-                        st.rerun()
-
-    st.stop()
-
-
-
-if page == "Meetings" and st.session_state.transcript is None:
+# ═══════ MEETINGS (UPLOAD) ═══════
+if page == "Meetings":
 
     st.markdown("""
     <div style="max-width:680px;margin:0 auto 0.5rem;">
@@ -1596,32 +1875,14 @@ if page == "Meetings" and st.session_state.transcript is None:
                     st.error(f"Could not extract audio: {e}")
                     st.stop()
 
-                st.markdown("### Transcription Progress")
-                st_pb = st.progress(0.0)
-                st_pt = st.empty()
-                old_err = sys.stderr
-                sys.stderr = CaptureStderr(st_pb, st_pt)
-                try:
-                    result = whisper_model.transcribe(audio_array, verbose=True)
-                finally:
-                    sys.stderr = old_err
-                    st_pb.progress(1.0)
-                    st_pt.text("Transcription Complete!")
+                with st.spinner("Transcribing speech with Whisper…"):
+                    result = whisper_model.transcribe(audio_array)
 
                 render_steps(1)
 
-                st.markdown("### Diarization Progress")
-                st_pb2 = st.progress(0.0)
-                st_pt2 = st.empty()
-                old_err = sys.stderr
-                sys.stderr = CaptureStderr(st_pb2, st_pt2)
-                try:
+                with st.spinner("Identifying speakers with Pyannote…"):
                     waveform_tensor = torch.from_numpy(audio_array).unsqueeze(0)
                     diarization = diarization_pipeline({"waveform": waveform_tensor, "sample_rate": 16000})
-                finally:
-                    sys.stderr = old_err
-                    st_pb2.progress(1.0)
-                    st_pt2.text("Diarization Complete!")
 
                 render_steps(2)
 
@@ -1653,49 +1914,83 @@ if page == "Meetings" and st.session_state.transcript is None:
 
                 render_steps(3)
 
-                with st.spinner("Generating intelligence report with Gemini…"):
+                with st.spinner("Generating structured intelligence with Gemini…"):
                     client = genai.Client(api_key=gemini_key)
-                    prompt = f"""You are an expert AI meeting assistant. Analyze the following meeting transcript and generate a structured professional report.
-
-The report MUST contain:
-1. An **Executive Summary** (1-2 paragraphs)
-2. **Key Discussion Points** (Bulleted list)
-3. **Action Items & Owners** (Bulleted list of tasks and owners)
-
-Meeting Transcript:
-{final_transcript}
-"""
-                    import time
-                    for attempt in range(3):
-                        try:
-                            summary_response = client.models.generate_content(
-                                model='gemini-2.5-flash',
-                                contents=prompt,
+                    from llm_service import process_transcript_with_llm
+                    from database import get_db, SessionLocal
+                    from models import Meeting, Participant, ActionItem, KeyPoint, KeyDecision
+                    
+                    try:
+                        structured_data = process_transcript_with_llm(client, final_transcript)
+                        st.session_state.structured_data = structured_data
+                        
+                        # Save to database
+                        db = SessionLocal()
+                        
+                        # Find or create participants
+                        participant_objs = []
+                        for p_name in structured_data.participants:
+                            p = db.query(Participant).filter(Participant.name == p_name).first()
+                            if not p:
+                                p = Participant(name=p_name)
+                                db.add(p)
+                            participant_objs.append(p)
+                        db.commit()
+                        
+                        # Create Meeting
+                        meeting = Meeting(
+                            filename=uploaded_file.name,
+                            transcript=final_transcript,
+                            summary=structured_data.summary,
+                            user_id=st.session_state.user_id
+                        )
+                        meeting.participants.extend(participant_objs)
+                        db.add(meeting)
+                        db.commit()
+                        db.refresh(meeting)
+                        
+                        # Add Action Items
+                        for ai in structured_data.action_items:
+                            p_id = None
+                            if ai.assigned_participant:
+                                p = db.query(Participant).filter(Participant.name == ai.assigned_participant).first()
+                                if p:
+                                    p_id = p.id
+                            action = ActionItem(
+                                meeting_id=meeting.id,
+                                participant_id=p_id,
+                                description=ai.description,
+                                deadline=ai.deadline,
+                                priority=ai.priority,
+                                status=ai.status
                             )
-                            st.session_state.report_summary = summary_response.text
-                            break
-                        except Exception as e:
-                            if "503" in str(e) and attempt < 2:
-                                time.sleep(2)
-                            else:
-                                st.session_state.report_summary = f"⚠ Failed to generate summary: {e}"
+                            db.add(action)
+                            
+                        # Add Key Points
+                        for kp in structured_data.key_points:
+                            db.add(KeyPoint(meeting_id=meeting.id, point=kp))
+                            
+                        # Add Key Decisions
+                        for kd in structured_data.decisions:
+                            db.add(KeyDecision(meeting_id=meeting.id, decision=kd))
+                            
+                        db.commit()
+                        # Extract meeting ID before closing the session
+                        saved_meeting_id = meeting.id
+                        db.close()
+                        
+                        # Fallback simple string summary
+                        st.session_state.report_summary = structured_data.summary
+                        
+                    except Exception as e:
+                        saved_meeting_id = None
+                        st.session_state.report_summary = f"⚠ Failed to generate structured intelligence: {e}"
+                        st.session_state.structured_data = None
 
                 render_steps(4)  # all done
-
-                # Save meeting to database
-                if st.session_state.get("user_id"):
-                    try:
-                        save_meeting(
-                            user_id=st.session_state.user_id,
-                            filename=uploaded_file.name,
-                            transcript=st.session_state.transcript,
-                            summary=st.session_state.report_summary or "",
-                        )
-                    except Exception:
-                        pass  # Don't fail the whole flow if DB save fails
-
-                st.success("✅  Analysis complete! Navigating to Intelligence page...")
-                st.session_state.current_page = "Intelligence"
+                st.session_state.active_meeting_id = saved_meeting_id
+                st.session_state._nav_target = "Intelligence"
+                st.success("✅  Analysis complete! Navigating to Intelligence...")
                 import time; time.sleep(0.8)
                 st.rerun()
 
@@ -1707,12 +2002,12 @@ Meeting Transcript:
                         os.remove(tmp_path)
                     except Exception:
                         pass
+        st.stop()
+    st.stop()
 
-
-        st.stop() # Added by patch
 
 # ─────────────────────────────────────────────
-#  RESULTS VIEW
+#  RESULTS VIEW (INTELLIGENCE)
 # ─────────────────────────────────────────────
 if page == "Intelligence" and st.session_state.transcript:
 
@@ -1790,7 +2085,26 @@ if page == "Intelligence" and st.session_state.transcript:
             """, unsafe_allow_html=True)
 
             st.markdown('<div class="report-executive">', unsafe_allow_html=True)
-            st.markdown(st.session_state.report_summary)
+            if st.session_state.structured_data:
+                sd = st.session_state.structured_data
+                st.markdown(f"**Executive Summary**\n\n{sd.summary}")
+                
+                if sd.key_points:
+                    st.markdown("**Key Points**")
+                    for kp in sd.key_points:
+                        st.markdown(f"- {kp}")
+                        
+                if sd.decisions:
+                    st.markdown("**Key Decisions**")
+                    for kd in sd.decisions:
+                        st.markdown(f"- {kd}")
+                        
+                if sd.action_items:
+                    st.markdown("**Action Items**")
+                    for ai in sd.action_items:
+                        st.markdown(f"- {ai.description} (Assigned to: {ai.assigned_participant}, Deadline: {ai.deadline}, Priority: {ai.priority}, Status: {ai.status})")
+            else:
+                st.markdown(st.session_state.report_summary)
             st.markdown('</div>', unsafe_allow_html=True)
 
             st.markdown('<div style="height:0.5rem;"></div>', unsafe_allow_html=True)
@@ -1802,7 +2116,7 @@ if page == "Intelligence" and st.session_state.transcript:
             </div>
             """, unsafe_allow_html=True)
 
-            exp_col1, exp_col2, exp_col3 = st.columns(3)
+            exp_col1, exp_col2, exp_col3, exp_col4 = st.columns(4)
 
             with exp_col1:
                 pdf_bytes = generate_pdf_report(
@@ -1814,6 +2128,7 @@ if page == "Intelligence" and st.session_state.transcript:
                     file_name="Meeting_Report.pdf",
                     mime="application/pdf",
                     use_container_width=True,
+                    key="dl_pdf",
                 )
 
             with exp_col2:
@@ -1826,15 +2141,29 @@ if page == "Intelligence" and st.session_state.transcript:
                     file_name="Meeting_Report.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     use_container_width=True,
+                    key="dl_docx",
                 )
 
             with exp_col3:
+                summary_txt = (st.session_state.report_summary or "").encode("utf-8")
                 st.download_button(
-                    label="📃  Download Transcript",
-                    data=st.session_state.transcript,
+                    label="📋  Download Summary (.txt)",
+                    data=summary_txt,
+                    file_name="meeting_summary.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    key="dl_summary_txt",
+                )
+
+            with exp_col4:
+                transcript_txt = (st.session_state.transcript or "").encode("utf-8")
+                st.download_button(
+                    label="📃  Download Transcript (.txt)",
+                    data=transcript_txt,
                     file_name="diarized_transcript.txt",
                     mime="text/plain",
                     use_container_width=True,
+                    key="dl_transcript",
                 )
 
         st.markdown("<hr>", unsafe_allow_html=True)
@@ -1857,8 +2186,9 @@ if page == "Intelligence" and st.session_state.transcript:
         # New file button
         st.markdown('<div class="new-file-btn">', unsafe_allow_html=True)
         if st.button("↺  Process a New File", use_container_width=False):
-            for key in ["transcript", "chroma_collection", "report_summary", "messages"]:
+            for key in ["transcript", "chroma_collection", "report_summary", "structured_data", "messages", "active_meeting_id", "current_meeting_data"]:
                 st.session_state[key] = None if key != "messages" else []
+            st.session_state._nav_target = "Meetings"
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1892,14 +2222,29 @@ if page == "Intelligence" and st.session_state.transcript:
             with st.chat_message("assistant", avatar="🧠"):
                 msg_placeholder = st.empty()
 
-                embedder = load_embedding_model()
-                query_embedding = embedder.encode([prompt]).tolist()
+                context = ""
+                collection = ensure_chroma_collection()
+                if collection is not None:
+                    try:
+                        embedder = load_embedding_model()
+                        query_embedding = embedder.encode([prompt]).tolist()
+                        count = collection.count()
+                        if count > 0:
+                            results = collection.query(
+                                query_embeddings=query_embedding,
+                                n_results=min(3, count),
+                            )
+                            if results and results.get('documents') and results['documents'][0]:
+                                context = "\n\n".join(results['documents'][0])
+                    except Exception:
+                        context = ""
 
-                results = st.session_state.chroma_collection.query(
-                    query_embeddings=query_embedding,
-                    n_results=3,
-                )
-                context = "\n\n".join(results['documents'][0])
+                # Resilient fallback to transcript if RAG collection query was empty
+                if not context and st.session_state.get("transcript"):
+                    context = st.session_state.transcript[:6000]
+
+                if not context:
+                    context = "No meeting transcript available."
 
                 system_prompt = f"""You are an expert AI meeting assistant. Answer the user's question based ONLY on the provided meeting transcript context below.
 If the information is not present in the context, say: "I don't have enough information from this meeting to answer that."
@@ -1908,30 +2253,35 @@ Be concise, professional, and precise.
 Context:
 {context}
 """
-                try:
-                    client = genai.Client(api_key=gemini_key)
-                    import time
-                    for attempt in range(3):
-                        try:
-                            response = client.models.generate_content_stream(
-                                model='gemini-2.5-flash',
-                                contents=system_prompt + f"\nUser Question: {prompt}",
-                            )
-                            break
-                        except Exception as e:
-                            if "503" in str(e) and attempt < 2:
-                                time.sleep(2)
-                            else:
-                                raise e
+                if not gemini_key:
+                    st.error("Please provide a Gemini API Key in the sidebar.")
+                else:
+                    try:
+                        client = genai.Client(api_key=gemini_key)
+                        import time
+                        response = None
+                        for attempt in range(3):
+                            try:
+                                response = client.models.generate_content_stream(
+                                    model='gemini-2.5-flash',
+                                    contents=system_prompt + f"\nUser Question: {prompt}",
+                                )
+                                break
+                            except Exception as e:
+                                if "503" in str(e) and attempt < 2:
+                                    time.sleep(2)
+                                else:
+                                    raise e
 
-                    full_response = ""
-                    for chunk in response:
-                        if chunk.text:
-                            full_response += chunk.text
-                            msg_placeholder.markdown(full_response + " ▌")
+                        full_response = ""
+                        if response:
+                            for chunk in response:
+                                if chunk.text:
+                                    full_response += chunk.text
+                                    msg_placeholder.markdown(full_response + " ▌")
 
-                    msg_placeholder.markdown(full_response)
-                    st.session_state.messages.append({"role": "assistant", "content": full_response})
+                        msg_placeholder.markdown(full_response)
+                        st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-                except Exception as e:
-                    st.error(f"Could not generate response: {e}")
+                    except Exception as e:
+                        st.error(f"Could not generate response: {e}")
