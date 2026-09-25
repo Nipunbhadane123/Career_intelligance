@@ -1,0 +1,17 @@
+streamlit
+openai-whisper
+moviepy
+google-genai
+chromadb
+sentence-transformers
+pyannote.audio
+soundfile
+python-docx
+xhtml2pdf
+markdown
+pydantic
+sqlalchemy
+tenacity
+bcrypt
+fastapi
+uvicorn

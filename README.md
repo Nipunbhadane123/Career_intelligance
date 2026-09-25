@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # 🧠 Career Intelligence
 
@@ -29,6 +29,8 @@ This repository is organized as a series of milestones, each shipping a standalo
 | Milestone | App | Description | Status |
 |---|---|---|---|
 | **Milestone 1** | 🧠 SynthAI — Meeting Intelligence | End-to-end meeting transcription, diarization, summarization & RAG-chat | ✅ Live |
+| **Milestone 2** | 📊 SynthAI — Meeting Intelligence & DB | Structured Gemini extraction, SQLite database integration, action tracking & analytics | ✅ Complete |
+| **Milestone 3** | 🔍 SynthAI — Knowledge Repository & Semantic RAG | Persistent ChromaDB vector store, multi-entity dynamic embeddings, sub-3s semantic search, grounded cross-meeting RAG Q&A & REST API layer (`/meetings`, `/search`, `/ask`) | ✅ Complete |
 
 ---
 
@@ -143,15 +145,37 @@ Open **http://localhost:8501**, enter your API keys in the sidebar, upload a rec
 ```
 Career_intelligance/
 │
-├── Milestone_1/
-│   ├── app.py              ← Full Streamlit application
-│   ├── requirements.txt    ← Python dependencies
-│   ├── ffmpeg.exe          ← Bundled FFmpeg binary (Windows)
-│   └── README.md           ← Milestone-specific deep-dive docs
+├── Milestone_1/                    ← SynthAI: Meeting Intelligence
+│   ├── app.py                      ← Full Streamlit application
+│   ├── requirements.txt            ← Python dependencies
+│   ├── ffmpeg.exe                  ← Bundled FFmpeg binary (Windows)
+│   └── README.md                   ← Milestone 1 docs & architecture
 │
-├── packages.txt            ← System packages for Streamlit Cloud
-├── LICENSE                 ← MIT License
-└── README.md               ← You are here
+├── Milestone_2/                    ← SynthAI: Database & Analytics
+│   ├── app.py                      ← Streamlit dashboard with database views
+│   ├── database.py                 ← SQLite engine & CRUD operations
+│   ├── models.py                   ← SQLAlchemy ORM models
+│   ├── schemas.py                  ← Pydantic schemas
+│   ├── llm_service.py              ← Structured Gemini extraction
+│   └── README.md                   ← Milestone 2 docs
+│
+├── Milestone_3/                    ← SynthAI: Knowledge Base & Semantic RAG
+│   ├── api.py                      ← FastAPI REST API (/meetings, /search, /ask, auth)
+│   ├── app.py                      ← Streamlit UI with Knowledge Search & AI Q&A
+│   ├── vector_store.py             ← Persistent ChromaDB vector integration
+│   ├── embedding_service.py        ← Dynamic sentence-transformers embeddings
+│   ├── search_service.py           ← Sub-3s semantic search engine
+│   ├── rag_service.py              ← Grounded Gemini RAG pipeline
+│   ├── database.py                 ← Relational knowledge repository
+│   ├── seed_data.py                ← Historical data seeding & vector indexing
+│   ├── test_milestone3.py          ← Consolidated master test suite (Tasks 1-9)
+│   ├── test_api_integration.py    ← End-to-end API test suite
+│   ├── test_validation_and_edge_cases.py ← 16 validation & edge case tests
+│   └── README.md                   ← Comprehensive Milestone 3 documentation
+│
+├── packages.txt                    ← System packages for Streamlit Cloud
+├── LICENSE                         ← MIT License
+└── README.md                       ← You are here
 ```
 
 ---

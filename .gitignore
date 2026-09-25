@@ -44,6 +44,15 @@ ffmpeg.exe
 .env
 .env.local
 
+# Vector databases
+chroma_db/
+**/chroma_db/
+.chroma/
+
+# Cache and logs
+.pytest_cache/
+*.log
+
 # Operating System Files
 .DS_Store
 Thumbs.db
