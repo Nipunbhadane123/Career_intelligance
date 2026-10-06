@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  synthai-backend:
+    build: .
+    container_name: synthai_backend_m4
+    command: uvicorn api:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    volumes:
+      - db_data:/app/chroma_db
+      - ./meeting_intelligence.db:/app/meeting_intelligence.db
+    restart: unless-stopped
+
+  synthai-frontend:
+    build: .
+    container_name: synthai_frontend_m4
+    command: streamlit run app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      - db_data:/app/chroma_db
+      - ./meeting_intelligence.db:/app/meeting_intelligence.db
+    depends_on:
+      - synthai-backend
+    restart: unless-stopped
+
+volumes:
+  db_data:

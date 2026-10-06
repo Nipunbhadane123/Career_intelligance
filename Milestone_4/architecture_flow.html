@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SynthAI Enterprise — Architecture & Dataflow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-void: #090d16;
+      --bg-surface: #0f172a;
+      --bg-card: #131d33;
+      --border-subtle: rgba(148, 163, 184, 0.15);
+      --border-glow: rgba(99, 102, 241, 0.4);
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --cyan: #38bdf8;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-dim: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-void);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    header {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .brand-icon {
+      font-size: 1.6rem;
+      background: linear-gradient(135deg, #6366f1, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .brand-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .status-ribbon {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .badge-live {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .badge-live::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+    .badge-dim {
+      background: rgba(148, 163, 184, 0.1);
+      color: #cbd5e1;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .btn {
+      background: #1e293b;
+      border: 1px solid var(--border-subtle);
+      color: #f1f5f9;
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background: #334155;
+      border-color: var(--primary-light);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      border: none;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    main {
+      flex: 1;
+      padding: 1.5rem 2rem 3rem 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+    }
+
+    .diagram-container {
+      background: #0d1117;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.15);
+      position: relative;
+    }
+
+    .diagram-container svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+
+    .spec-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 1.25rem;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .spec-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary-light);
+    }
+    .spec-card h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .spec-card p {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+    .spec-card ul {
+      margin-top: 0.5rem;
+      padding-left: 1.2rem;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+    }
+    .spec-card li { margin-bottom: 0.3rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-icon">🧠</span>
+      <div>
+        <div class="brand-title">SynthAI Enterprise Intelligence</div>
+        <div class="brand-subtitle">Interactive System Architecture &amp; RAG Flowchart</div>
+      </div>
+    </div>
+
+    <div class="status-ribbon">
+      <span class="badge badge-live">FastAPI 8000: UP</span>
+      <span class="badge badge-live">Streamlit 8501: UP</span>
+      <span class="badge badge-dim">ChromaDB: HNSW Cosine</span>
+      <span class="badge badge-dim">SQLite: WAL Mode</span>
+    </div>
+
+    <div class="nav-actions">
+      <a href="http://localhost:8501/" target="_blank" class="btn btn-primary">Open Streamlit App</a>
+      <a href="/docs" target="_blank" class="btn">Swagger Docs</a>
+      <a href="architecture_diagram.svg" download="SynthAI_System_Architecture.svg" class="btn">⬇️ Download SVG</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <div>
+        <h2 style="font-size: 1.1rem; font-weight: 700;">Complete Pipeline &amp; Knowledge Base Architecture</h2>
+        <p style="font-size: 0.8rem; color: var(--text-dim);">Detailed mapping from multi-platform ingestion to Gemini LLM synthesis and ChromaDB grounded RAG.</p>
+      </div>
+      <div>
+        <span class="badge badge-dim" style="font-size: 0.8rem;">Architecture Spec v4.2 • Milestone 3 &amp; 4 Continuous Integration</span>
+      </div>
+    </div>
+
+    <div class="diagram-container">
+      <!-- Inline Embedded High-Res SVG Diagram -->
+      <iframe src="architecture_diagram.svg" style="width: 100%; height: 1350px; border: none;"></iframe>
+    </div>
+
+    <div class="specs-grid">
+      <div class="spec-card">
+        <h3>📹 Ingestion Pipeline</h3>
+        <p>Unified multi-source meeting intake supporting synchronous and asynchronous ingestion:</p>
+        <ul>
+          <li><b>Local Upload:</b> MP4, MP3, WAV, M4A with FFmpeg extraction.</li>
+          <li><b>Zoom Cloud:</b> OAuth 2.0, Webhook verification with SHA256 HMAC CRC token validation.</li>
+          <li><b>Google Meet:</b> Google Drive API polling with MD5 duplicate suppression.</li>
+        </ul>
+      </div>
+
+      <div class="spec-card">
+        <h3>✨ Dual-Engine AI Synthesis</h3>
+        <p>Robust intelligence extraction with zero downtime failover strategy:</p>
+        <ul>
+          <li><b>Gemini Primary:</b> Generates executive summaries, action items, deadlines, assignees, and key decisions.</li>
+          <li><b>Fallback Engine:</b> OpenAI / Local Heuristics triggered on quota depletion or network timeout.</li>
+          <li><b>Schema Enforcement:</b> Strict Pydantic JSON contracts.</li>
+        </ul>
+      </div>
+
+      <div class="spec-card">
+        <h3>🔮 Knowledge Base &amp; RAG</h3>
+        <p>Sub-second semantic intelligence matching the user's workflow:</p>
+        <ul>
+          <li><b>SQLite Metadata DB:</b> Stores normalized meeting records, users, and audit trails.</li>
+          <li><b>Embeddings:</b> <code>all-MiniLM-L6-v2</code> 384-dimensional normalized vectors.</li>
+          <li><b>ChromaDB:</b> Persistent cosine similarity vector store with metadata filtering.</li>
+          <li><b>Grounded RAG:</b> Gemini RAG synthesis with strict citation tracking <code>[Source: Meeting #ID, Timestamp]</code>.</li>
+        </ul>
+      </div>
+
+      <div class="spec-card">
+        <h3>📑 Reports &amp; Security Layer</h3>
+        <p>Enterprise deliverables and strict access control boundaries:</p>
+        <ul>
+          <li><b>Executive PDF:</b> ReportLab high-fidelity PDF with cover, metadata, and action item tables.</li>
+          <li><b>Tabular CSV:</b> RFC-4180 compliant relational exports.</li>
+          <li><b>Access Control:</b> Multi-tenant isolation with Bcrypt password hashing.</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
